@@ -1,0 +1,11 @@
+version: "3"
+services:
+  jellyfin:
+    image: jellyfin/jellyfin
+    ports:
+    - 8096:8096
+    volumes:
+    - ${CONFIG_PATH}:/config
+    - ${CACHE_PATH}:/cache
+    - ${MEDIA_PATH}:/media
+    restart: "unless-stopped"
