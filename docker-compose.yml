@@ -61,6 +61,50 @@ services:
       - traefik.http.middlewares.chain-all.chain.middlewares=chain-auth@file,secure-headers-frame-options
       - traefik.http.routers.traefik.middlewares=chain-all
 
+  keycloak:
+    container_name: keycloak
+    image: jboss/keycloak
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - keycloak-db
+    environment:
+      - TZ=$TZ
+      - DB_VENDOR=mysql
+      - DB_DATABASE=keycloak
+      - DB_ADDR=keycloak-db
+      - DB_USER=keycloak
+      - DB_PASSWORD=$KEYCLOAK_PWD_DB
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=$KEYCLOAK_PWD
+      - PROXY_ADDRESS_FORWARDING=true
+      - KEYCLOAK_HOSTNAME=kc.$DOMAINNAME
+    networks:
+      - internal
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.keycloak.entrypoints=https
+      - traefik.http.routers.keycloak.rule=Host(`kc.$DOMAINNAME`)
+      - traefik.http.routers.keycloak.tls=true
+      - traefik.http.services.keycloak.loadbalancer.server.port=8080
+
+  keycloak-db:
+    container_name: keycloak-db
+    image: mysql
+    restart: unless-stopped
+    command: --default-time-zone=Europe/Riga
+    environment:
+      - TZ=$TZ
+      - MYSQL_ROOT_PASSWORD=$KEYCLOAK_PWD_DB_ROOT
+      - MYSQL_DATABASE=keycloak
+      - MYSQL_USER=keycloak
+      - MYSQL_PASSWORD=$KEYCLOAK_PWD_DB
+    networks:
+      - internal
+    volumes:
+      - $CONFIG_PATH/keycloak/database:/var/lib/mysql
+
   organizr:
     container_name: organizr
     image: organizrtools/organizr-v2
