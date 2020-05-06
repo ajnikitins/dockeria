@@ -3,6 +3,8 @@ version: '3.7'
 networks:
   proxy:
     external: true
+  internal:
+    driver: bridge
 
 services:
   watchtower:
@@ -11,6 +13,8 @@ services:
     restart: "unless-stopped"
     environment:
       - TZ=$TZ
+    networks:
+      - internal
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
@@ -23,6 +27,7 @@ services:
     environment:
       - TZ=$TZ
     networks:
+      - internal
       - proxy
     ports:
       - 80:80
@@ -65,6 +70,7 @@ services:
     environment:
       - TZ=$TZ
     networks:
+      - internal
       - proxy
     ports:
     - 8085:8085
@@ -87,6 +93,7 @@ services:
     environment:
       - TZ=$TZ
     networks:
+      - internal
       - proxy
     volumes:
       - $CONFIG_PATH/jellyfin/config:/config
@@ -109,6 +116,7 @@ services:
     environment:
       - TZ=$TZ
     networks:
+      - internal
       - proxy
     volumes:
       - $CONFIG_PATH/qbittorrent/config:/config
@@ -133,6 +141,7 @@ services:
     environment:
       - TZ=$TZ
     networks:
+      - internal
       - proxy
     volumes:
       - $CONFIG_PATH/jackett/config:/config
