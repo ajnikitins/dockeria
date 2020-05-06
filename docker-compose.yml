@@ -10,7 +10,7 @@ services:
   watchtower:
     container_name: watchtower
     image: containrrr/watchtower
-    restart: "unless-stopped"
+    restart: unless-stopped
     environment:
       - TZ=$TZ
     networks:
@@ -23,7 +23,7 @@ services:
     image: traefik
     security_opt:
       - no-new-privileges:true
-    restart: "unless-stopped"
+    restart: unless-stopped
     environment:
       - TZ=$TZ
     networks:
@@ -39,32 +39,32 @@ services:
       - $SHARED:/shared
       - $CONFIG_PATH/traefik/traefik.log:/traefik.log
     labels:
-      - "com.centurylinklabs.watchtower.enable=false"
-      - "traefik.enable=true"
+      - com.centurylinklabs.watchtower.enable=false
+      - traefik.enable=true
       # HTTP-to-HTTPS
-      - "traefik.http.routers.http-catchall.entrypoints=http"
-      - "traefik.http.routers.http-catchall.rule=HostRegexp(`{host:.+}`)"
-      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - traefik.http.routers.http-catchall.entrypoints=http
+      - traefik.http.routers.http-catchall.rule=HostRegexp(`{host:.+}`)
+      - traefik.http.routers.http-catchall.middlewares=redirect-to-https
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
       # HTTP Routers
-      - "traefik.http.routers.traefik.entrypoints=https"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.$DOMAINNAME`)"
-      - "traefik.http.routers.traefik.tls=true"
-      - "traefik.http.routers.traefik.tls.domains[0].main=$DOMAINNAME"
-      - "traefik.http.routers.traefik.tls.domains[0].sans=*.$DOMAINNAME"
+      - traefik.http.routers.traefik.entrypoints=https
+      - traefik.http.routers.traefik.rule=Host(`traefik.$DOMAINNAME`)
+      - traefik.http.routers.traefik.tls=true
+      - traefik.http.routers.traefik.tls.domains[0].main=$DOMAINNAME
+      - traefik.http.routers.traefik.tls.domains[0].sans=*.$DOMAINNAME
       ## Services - API
-      - "traefik.http.routers.traefik.service=api@internal"
+      - traefik.http.routers.traefik.service=api@internal
       ## Middlewares
-#      - "traefik.http.middlewares.auth.forwardauth.address=http://viens.ml/api/?v2/auth&group=1"
-#      - "traefik.http.routers.traefik.middlewares=auth"
-      - "traefik.http.middlewares.secure-headers-frame-options.headers.customFrameOptionsValue='allow-from https:$DOMAINNAME'"
-      - "traefik.http.middlewares.chain-all.chain.middlewares=chain-auth@file,secure-headers-frame-options"
-      - "traefik.http.routers.traefik.middlewares=chain-all"
+#      - traefik.http.middlewares.auth.forwardauth.address=http://viens.ml/api/?v2/auth&group=1
+#      - traefik.http.routers.traefik.middlewares=auth
+      - traefik.http.middlewares.secure-headers-frame-options.headers.customFrameOptionsValue="allow-from https:$DOMAINNAME"
+      - traefik.http.middlewares.chain-all.chain.middlewares=chain-auth@file,secure-headers-frame-options
+      - traefik.http.routers.traefik.middlewares=chain-all
 
   organizr:
     container_name: organizr
     image: organizrtools/organizr-v2
-    restart: "unless-stopped"
+    restart: unless-stopped
     depends_on:
       - traefik
     environment:
@@ -77,16 +77,16 @@ services:
     volumes:
       - $CONFIG_PATH/organizr/config:/config
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.organizr.entrypoints=https"
-      - "traefik.http.routers.organizr.rule=Host(`$DOMAINNAME`,`www.$DOMAINNAME`)"
-      - "traefik.http.routers.organizr.tls=true"
-      - "traefik.http.routers.organizr.middlewares=chain-all"
+      - traefik.enable=true
+      - traefik.http.routers.organizr.entrypoints=https
+      - traefik.http.routers.organizr.rule=Host(`$DOMAINNAME`,`www.$DOMAINNAME`)
+      - traefik.http.routers.organizr.tls=true
+      - traefik.http.routers.organizr.middlewares=chain-all
 
   jellyfin:
     container_name: jellyfin
     image: jellyfin/jellyfin
-    restart: "unless-stopped"
+    restart: unless-stopped
     depends_on:
       - traefik
       - organizr
@@ -100,17 +100,17 @@ services:
       - $CONFIG_PATH/jellyfin/cache:/cache
       - $MEDIA:/media
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jellyfin.entrypoints=https"
-      - "traefik.http.routers.jellyfin.rule=Host(`jf.$DOMAINNAME`)"
-      - "traefik.http.routers.jellyfin.tls=true"
-#      - "traefik.http.routers.jellyfin.middlewares=auth"
-      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+      - traefik.enable=true
+      - traefik.http.routers.jellyfin.entrypoints=https
+      - traefik.http.routers.jellyfin.rule=Host(`jf.$DOMAINNAME`)
+      - traefik.http.routers.jellyfin.tls=true
+#      - traefik.http.routers.jellyfin.middlewares=auth
+      - traefik.http.services.jellyfin.loadbalancer.server.port=8096
 
   qbittorent:
     container_name: qbittorrent
     image: linuxserver/qbittorrent
-    restart: "unless-stopped"
+    restart: unless-stopped
     depends_on:
       - traefik
     environment:
@@ -125,12 +125,12 @@ services:
       - 6881:6881
       - 6881:6881/udp
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.torrent.entrypoints=https"
-      - "traefik.http.routers.torrent.rule=Host(`qb.$DOMAINNAME`)"
-      - "traefik.http.routers.torrent.tls=true"
-#      - "traefik.http.routers.torrent.middlewares=auth"
-      - "traefik.http.services.torrent.loadbalancer.server.port=8080"
+      - traefik.enable=true
+      - traefik.http.routers.torrent.entrypoints=https
+      - traefik.http.routers.torrent.rule=Host(`qb.$DOMAINNAME`)
+      - traefik.http.routers.torrent.tls=true
+#      - traefik.http.routers.torrent.middlewares=auth
+      - traefik.http.services.torrent.loadbalancer.server.port=8080
 
   jackett:
     container_name: jackett
@@ -146,7 +146,7 @@ services:
     volumes:
       - $CONFIG_PATH/jackett/config:/config
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jackett.entrypoints=https"
-      - "traefik.http.routers.jackett.rule=Host(`jk.$DOMAINNAME`)"
-      - "traefik.http.routers.jackett.tls=true"
+      - traefik.enable=true
+      - traefik.http.routers.jackett.entrypoints=https
+      - traefik.http.routers.jackett.rule=Host(`jk.$DOMAINNAME`)
+      - traefik.http.routers.jackett.tls=true
