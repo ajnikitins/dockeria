@@ -1,0 +1,6 @@
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /shared/viens.ml.cert
+        keyFile: /shared/viens.ml.key

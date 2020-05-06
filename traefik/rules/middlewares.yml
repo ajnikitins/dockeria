@@ -1,0 +1,34 @@
+http:
+  middlewares:
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+    secure-headers:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - OPTIONS
+          - PUT
+        accessControlMaxAge: 100
+        hostsProxyHeaders:
+          - "X-Forwarded-Host"
+        sslRedirect: true
+        stsSeconds: 6307200
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+#        customFrameOptionsValue: "allow-from https:viens.ml"
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "same-origin"
+        featurePolicy: "camera 'none'; geolocation 'none'; microphone 'none'; payment 'none'; usb 'none'; vr 'none';"
+        customResponseHeaders:
+          X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex,"
+          server: ""
+
+    chain-auth:
+      chain:
+        middlewares:
+          - rate-limit
+          - secure-headers
