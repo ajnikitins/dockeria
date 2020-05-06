@@ -32,7 +32,7 @@ services:
       - ./traefik/rules:/rules
       - ./traefik/traefik.yml:/traefik.yml
       - $SHARED:/shared
-      - $TRAEFIK/traefik.log:/traefik.log
+      - $CONFIG_PATH/traefik/traefik.log:/traefik.log
     labels:
       - "com.centurylinklabs.watchtower.enable=false"
       - "traefik.enable=true"
@@ -69,7 +69,7 @@ services:
     ports:
     - 8085:8085
     volumes:
-      - $ORGANIZR/Config:/config
+      - $CONFIG_PATH/organizr/config:/config
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.organizr.entrypoints=https"
@@ -89,8 +89,8 @@ services:
     networks:
       - proxy
     volumes:
-      - $JELLYFIN/Config:/config
-      - $JELLYFIN/Cache:/cache
+      - $CONFIG_PATH/jellyfin/config:/config
+      - $CONFIG_PATH/jellyfin/cache:/cache
       - $MEDIA:/media
     labels:
       - "traefik.enable=true"
@@ -111,7 +111,7 @@ services:
     networks:
       - proxy
     volumes:
-      - $TORRENT/config:/config
+      - $CONFIG_PATH/qbittorrent/config:/config
       - $DOWNLOADS:/downloads
     ports:
       - 6881:6881
@@ -135,7 +135,7 @@ services:
     networks:
       - proxy
     volumes:
-      - $JACKETT/config:/config
+      - $CONFIG_PATH/jackett/config:/config
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.jackett.entrypoints=https"
