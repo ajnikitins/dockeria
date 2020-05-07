@@ -55,11 +55,10 @@ services:
       ## Services - API
       - traefik.http.routers.traefik.service=api@internal
       ## Middlewares
-#      - traefik.http.middlewares.auth.forwardauth.address=http://viens.ml/api/?v2/auth&group=1
-#      - traefik.http.routers.traefik.middlewares=auth
       - traefik.http.middlewares.secure-headers-frame-options.headers.customFrameOptionsValue="allow-from https:$DOMAINNAME"
-      - traefik.http.middlewares.chain-all.chain.middlewares=chain-auth@file,secure-headers-frame-options
-      - traefik.http.routers.traefik.middlewares=chain-all
+      - traefik.http.middlewares.chain-all-auth.chain.middlewares=chain-auth@file,secure-headers-frame-options
+      - traefik.http.middlewares.chain-all-no-auth.chain.middlewares=chain-no-auth@file,secure-headers-frame-options
+      - traefik.http.routers.traefik.middlewares=chain-all-auth
 
   openldap:
     container_name: openldap
@@ -104,6 +103,7 @@ services:
       - traefik.http.routers.lum.rule=Host(`lm.$DOMAINNAME`)
       - traefik.http.routers.lum.tls=true
       - traefik.http.services.lum.loadbalancer.server.port=80
+      - traefik.http.routers.lum.middlewares=chain-all-auth
 
   keycloak:
     container_name: keycloak
@@ -112,6 +112,7 @@ services:
     depends_on:
       - traefik
       - keycloak-db
+      - openldap
     networks:
       - internal
       - proxy
@@ -148,6 +149,33 @@ services:
     volumes:
       - $CONFIG_PATH/keycloak/database:/var/lib/mysql
 
+  auth:
+    container_name: auth
+    image: thomseddon/traefik-forward-auth
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - keycloak
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+      - DEFAULT_PROVIDER=oidc
+      - PROVIDERS_OIDC_CLIENT_ID=$KEYCLOAK_CLIENT_ID
+      - PROVIDERS_OIDC_CLIENT_SECRET=$KEYCLOAK_CLIENT_SEC
+      - PROVIDERS_OIDC_ISSUER_URL=https://kc.$DOMAINNAME/auth/realms/$KEYCLOAK_REALM
+      - SECRET=$KEYCLOAK_COOKIE_SEC
+      - AUTH_HOST=auth.$DOMAINNAME
+      - COOKIE_DOMAIN=$DOMAINNAME
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.auth.entrypoints=https
+      - traefik.http.routers.auth.rule=Host(`auth.$DOMAINNAME`)
+      - traefik.http.services.auth.loadbalancer.server.port=4181
+      - traefik.http.routers.auth.tls=true
+      - traefik.http.routers.auth.middlewares=chain-all-auth
+
   organizr:
     container_name: organizr
     image: organizrtools/organizr-v2
@@ -168,7 +196,7 @@ services:
       - traefik.http.routers.organizr.entrypoints=https
       - traefik.http.routers.organizr.rule=Host(`$DOMAINNAME`,`www.$DOMAINNAME`)
       - traefik.http.routers.organizr.tls=true
-      - traefik.http.routers.organizr.middlewares=chain-all
+      - traefik.http.routers.organizr.middlewares=chain-all-auth
 
   jellyfin:
     container_name: jellyfin
@@ -191,8 +219,8 @@ services:
       - traefik.http.routers.jellyfin.entrypoints=https
       - traefik.http.routers.jellyfin.rule=Host(`jf.$DOMAINNAME`)
       - traefik.http.routers.jellyfin.tls=true
-#      - traefik.http.routers.jellyfin.middlewares=auth
       - traefik.http.services.jellyfin.loadbalancer.server.port=8096
+      - traefik.http.routers.jellyfin.middlewares=chain-all-auth
 
   qbittorent:
     container_name: qbittorrent
@@ -216,8 +244,8 @@ services:
       - traefik.http.routers.torrent.entrypoints=https
       - traefik.http.routers.torrent.rule=Host(`qb.$DOMAINNAME`)
       - traefik.http.routers.torrent.tls=true
-#      - traefik.http.routers.torrent.middlewares=auth
       - traefik.http.services.torrent.loadbalancer.server.port=8080
+      - traefik.http.routers.torrent.middlewares=chain-all-auth
 
   jackett:
     container_name: jackett
@@ -237,3 +265,4 @@ services:
       - traefik.http.routers.jackett.entrypoints=https
       - traefik.http.routers.jackett.rule=Host(`jk.$DOMAINNAME`)
       - traefik.http.routers.jackett.tls=true
+      - traefik.http.routers.jackett.middlewares=chain-all-auth

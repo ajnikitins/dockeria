@@ -4,6 +4,7 @@ http:
       rateLimit:
         average: 100
         burst: 50
+
     secure-headers:
       headers:
         accessControlAllowMethods:
@@ -27,8 +28,21 @@ http:
           X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex,"
           server: ""
 
+    keycloak:
+      forwardAuth:
+        address: "http://auth:4181"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - "X-Forwarded-User"
+
+    chain-no-auth:
+      chain:
+        middlewares:
+          - rate-limit
+          - secure-headers
     chain-auth:
       chain:
         middlewares:
           - rate-limit
           - secure-headers
+          - keycloak
