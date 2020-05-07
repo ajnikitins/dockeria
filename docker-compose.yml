@@ -68,6 +68,9 @@ services:
     depends_on:
       - traefik
       - keycloak-db
+    networks:
+      - internal
+      - proxy
     environment:
       - TZ=$TZ
       - DB_VENDOR=mysql
@@ -78,9 +81,6 @@ services:
       - KEYCLOAK_USER=admin
       - KEYCLOAK_PASSWORD=$KEYCLOAK_PWD
       - PROXY_ADDRESS_FORWARDING=true
-    networks:
-      - internal
-      - proxy
     labels:
       - traefik.enable=true
       - traefik.http.routers.keycloak.entrypoints=https
@@ -93,14 +93,14 @@ services:
     image: mysql
     restart: unless-stopped
     command: --default-time-zone=Europe/Riga
+    networks:
+      - internal
     environment:
       - TZ=$TZ
       - MYSQL_ROOT_PASSWORD=$KEYCLOAK_PWD_DB_ROOT
       - MYSQL_DATABASE=keycloak
       - MYSQL_USER=keycloak
       - MYSQL_PASSWORD=$KEYCLOAK_PWD_DB
-    networks:
-      - internal
     volumes:
       - $CONFIG_PATH/keycloak/database:/var/lib/mysql
 
