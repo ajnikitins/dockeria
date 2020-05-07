@@ -78,7 +78,6 @@ services:
       - KEYCLOAK_USER=admin
       - KEYCLOAK_PASSWORD=$KEYCLOAK_PWD
       - PROXY_ADDRESS_FORWARDING=true
-      - KEYCLOAK_HOSTNAME=kc.$DOMAINNAME
     networks:
       - internal
       - proxy
