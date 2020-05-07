@@ -11,10 +11,10 @@ services:
     container_name: watchtower
     image: containrrr/watchtower
     restart: unless-stopped
-    environment:
-      - TZ=$TZ
     networks:
       - internal
+    environment:
+      - TZ=$TZ
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
@@ -24,14 +24,14 @@ services:
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
-    environment:
-      - TZ=$TZ
     networks:
       - internal
       - proxy
     ports:
       - 80:80
       - 443:443
+    environment:
+      - TZ=$TZ
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./traefik/rules:/rules
@@ -110,11 +110,11 @@ services:
     restart: unless-stopped
     depends_on:
       - traefik
-    environment:
-      - TZ=$TZ
     networks:
       - internal
       - proxy
+    environment:
+      - TZ=$TZ
     ports:
     - 8085:8085
     volumes:
@@ -133,11 +133,11 @@ services:
     depends_on:
       - traefik
       - organizr
-    environment:
-      - TZ=$TZ
     networks:
       - internal
       - proxy
+    environment:
+      - TZ=$TZ
     volumes:
       - $CONFIG_PATH/jellyfin/config:/config
       - $CONFIG_PATH/jellyfin/cache:/cache
@@ -156,11 +156,11 @@ services:
     restart: unless-stopped
     depends_on:
       - traefik
-    environment:
-      - TZ=$TZ
     networks:
       - internal
       - proxy
+    environment:
+      - TZ=$TZ
     volumes:
       - $CONFIG_PATH/qbittorrent/config:/config
       - $DOWNLOADS:/downloads
@@ -181,11 +181,11 @@ services:
     restart: unless-stopped
     depends_on:
       - traefik
-    environment:
-      - TZ=$TZ
     networks:
       - internal
       - proxy
+    environment:
+      - TZ=$TZ
     volumes:
       - $CONFIG_PATH/jackett/config:/config
     labels:
