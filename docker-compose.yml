@@ -78,32 +78,28 @@ services:
     - $CONFIG_PATH/openldap/runtime:/var/lib/ldap
     - $CONFIG_PATH/openldap/static:/etc/ldap/slapd.d
 
-  lum:
-    container_name: lum
-    image: wheelybird/ldap-user-manager
+  phpldapadmin:
+    container_name: phpldapadmin
+    image: osixia/phpldapadmin
     restart: unless-stopped
     depends_on:
-      - traefik
       - openldap
     networks:
       - internal
       - proxy
     environment:
       - TZ=$TZ
-      - SERVER_HOSTNAME=lm.$DOMAINNAME
-      - LDAP_URI=ldap://openldap
-      - LDAP_BASE_DN=$LDAP_BASE_DN
-      - LDAP_ADMIN_BIND_DN=cn=admin,$LDAP_BASE_DN
-      - LDAP_ADMIN_BIND_PWD=$LDAP_ADMIN_PWD
-      - LDAP_ADMINS_GROUP=admins
-      - NO_HTTPS=true
+      - PHPLDAPADMIN_LDAP_HOSTS=openldap
+      - PHPLDAPADMIN_HTTPS=false
+      - PHPLDAPADMIN_TRUST_PROXY_SSL=true
+      - PHPLDAPADMIN_LDAP_CLIENT_TLS=false
     labels:
       - traefik.enable=true
-      - traefik.http.routers.lum.entrypoints=https
-      - traefik.http.routers.lum.rule=Host(`lm.$DOMAINNAME`)
-      - traefik.http.routers.lum.tls=true
-      - traefik.http.services.lum.loadbalancer.server.port=80
-      - traefik.http.routers.lum.middlewares=chain-all-auth
+      - traefik.http.routers.ldapadmin.entrypoints=https
+      - traefik.http.routers.ldapadmin.rule=Host(`pl.$DOMAINNAME`)
+      - traefik.http.routers.ldapadmin.tls=true
+#      - traefik.http.services.ldapadmin.loadbalancer.server.port=8080
+      - traefik.http.routers.ldapadmin.middlewares=chain-all-auth
 
   keycloak:
     container_name: keycloak
