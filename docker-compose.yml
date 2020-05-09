@@ -309,6 +309,7 @@ services:
     depends_on:
       - traefik
       - nzbhydra2
+      - qbittorent
     networks:
       - internal
       - proxy
