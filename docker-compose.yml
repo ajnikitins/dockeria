@@ -193,6 +193,9 @@ services:
     restart: unless-stopped
     depends_on:
       - traefik
+      - jellyfin
+      - qbittorent
+      - jackett
     networks:
       - internal
       - proxy
@@ -215,7 +218,6 @@ services:
     restart: unless-stopped
     depends_on:
       - traefik
-      - organizr
     networks:
       - internal
       - proxy
