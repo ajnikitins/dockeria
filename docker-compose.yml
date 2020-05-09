@@ -322,6 +322,6 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.sonarr.entrypoints=https
-      - traefik.http.routers.sonarr.rule=Host(`sr.$DOMAINNAME`)
+      - traefik.http.routers.sonarr.rule=Host(`sn.$DOMAINNAME`)
       - traefik.http.routers.sonarr.tls=true
       - traefik.http.routers.sonarr.middlewares=chain-all-auth
