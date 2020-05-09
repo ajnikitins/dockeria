@@ -310,6 +310,7 @@ services:
       - traefik
       - nzbhydra2
       - qbittorent
+      - jellyfin
     networks:
       - internal
       - proxy
@@ -334,6 +335,7 @@ services:
       - traefik
       - nzbhydra2
       - qbittorent
+      - jellyfin
     networks:
       - internal
       - proxy
