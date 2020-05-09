@@ -1,11 +1,406 @@
-version: "3"
+version: '3.7'
+
+networks:
+  proxy:
+    external: true
+  internal:
+    driver: bridge
+
 services:
-  jellyfin:
-    image: jellyfin/jellyfin
-    ports:
-    - 8096:8096
+
+  whoami:
+    container_name: whoami
+    image: containous/whoami
+    restart: unless-stopped
+    networks:
+      - internal
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.whoami.entrypoints=https
+      - traefik.http.routers.whoami.rule=Host(`whoami.$DOMAINNAME`)
+      - traefik.http.routers.whoami.tls=true
+      - traefik.http.routers.whoami.middlewares=chain-all-auth
+
+  watchtower:
+    container_name: watchtower
+    image: containrrr/watchtower
+    restart: unless-stopped
+    networks:
+      - internal
+    environment:
+      - TZ=$TZ
     volumes:
-    - ${CONFIG_PATH}:/config
-    - ${CACHE_PATH}:/cache
-    - ${MEDIA_PATH}:/media
-    restart: "unless-stopped"
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  traefik:
+    container_name: traefik
+    image: traefik
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    networks:
+      - internal
+      - proxy
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      - TZ=$TZ
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik/rules:/rules
+      - ./traefik/traefik.yml:/traefik.yml
+      - $SHARED:/shared
+      - $CONFIG_PATH/traefik/traefik.log:/traefik.log
+    labels:
+      - com.centurylinklabs.watchtower.enable=false
+      - traefik.enable=true
+      # HTTP-to-HTTPS
+      - traefik.http.routers.http-catchall.entrypoints=http
+      - traefik.http.routers.http-catchall.rule=HostRegexp(`{host:.+}`)
+      - traefik.http.routers.http-catchall.middlewares=redirect-to-https
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      # HTTP Routers
+      - traefik.http.routers.traefik.entrypoints=https
+      - traefik.http.routers.traefik.rule=Host(`traefik.$DOMAINNAME`)
+      - traefik.http.routers.traefik.tls=true
+      - traefik.http.routers.traefik.tls.domains[0].main=$DOMAINNAME
+      - traefik.http.routers.traefik.tls.domains[0].sans=*.$DOMAINNAME
+      ## Services - API
+      - traefik.http.routers.traefik.service=api@internal
+      ## Middlewares
+      - traefik.http.middlewares.secure-headers-frame-options.headers.customFrameOptionsValue="allow-from https:$DOMAINNAME"
+      - traefik.http.middlewares.chain-all-auth.chain.middlewares=chain-auth@file,secure-headers-frame-options
+      - traefik.http.middlewares.chain-all-no-auth.chain.middlewares=chain-no-auth@file,secure-headers-frame-options
+      - traefik.http.routers.traefik.middlewares=chain-all-auth
+
+  openldap:
+    container_name: openldap
+    image: osixia/openldap
+    restart: unless-stopped
+    networks:
+      - internal
+    environment:
+      - TZ=$TZ
+      - LDAP_DOMAIN=$DOMAINNAME
+      - LDAP_BASE_DN=$LDAP_BASE_DN
+      - LDAP_ORGANISATION=Dockeria
+      - LDAP_ADMIN_PASSWORD=$LDAP_ADMIN_PWD
+      - LDAP_TLS=false
+      - LDAP_RFC2307BIS_SCHEMA=true
+    volumes:
+    - $CONFIG_PATH/openldap/runtime:/var/lib/ldap
+    - $CONFIG_PATH/openldap/static:/etc/ldap/slapd.d
+
+  phpldapadmin:
+    container_name: phpldapadmin
+    image: osixia/phpldapadmin
+    restart: unless-stopped
+    depends_on:
+      - openldap
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+      - PHPLDAPADMIN_LDAP_HOSTS=openldap
+      - PHPLDAPADMIN_HTTPS=false
+      - PHPLDAPADMIN_TRUST_PROXY_SSL=true
+      - PHPLDAPADMIN_LDAP_CLIENT_TLS=false
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ldapadmin.entrypoints=https
+      - traefik.http.routers.ldapadmin.rule=Host(`pl.$DOMAINNAME`)
+      - traefik.http.routers.ldapadmin.tls=true
+#      - traefik.http.services.ldapadmin.loadbalancer.server.port=8080
+      - traefik.http.routers.ldapadmin.middlewares=chain-all-auth
+
+  keycloak:
+    container_name: keycloak
+    image: jboss/keycloak
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - keycloak-db
+      - openldap
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+      - DB_VENDOR=mysql
+      - DB_DATABASE=keycloak
+      - DB_ADDR=keycloak-db
+      - DB_USER=keycloak
+      - DB_PASSWORD=$KEYCLOAK_PWD_DB
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=$KEYCLOAK_PWD
+      - PROXY_ADDRESS_FORWARDING=true
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.keycloak.entrypoints=https
+      - traefik.http.routers.keycloak.rule=Host(`kc.$DOMAINNAME`)
+      - traefik.http.routers.keycloak.tls=true
+      - traefik.http.services.keycloak.loadbalancer.server.port=8080
+
+  keycloak-db:
+    container_name: keycloak-db
+    image: mysql
+    restart: unless-stopped
+    command: --default-time-zone=Europe/Riga
+    networks:
+      - internal
+    environment:
+      - TZ=$TZ
+      - MYSQL_ROOT_PASSWORD=$KEYCLOAK_PWD_DB_ROOT
+      - MYSQL_DATABASE=keycloak
+      - MYSQL_USER=keycloak
+      - MYSQL_PASSWORD=$KEYCLOAK_PWD_DB
+    volumes:
+      - $CONFIG_PATH/keycloak/database:/var/lib/mysql
+
+  auth:
+    container_name: auth
+    image: thomseddon/traefik-forward-auth
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - keycloak
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+      - DEFAULT_PROVIDER=oidc
+      - PROVIDERS_OIDC_CLIENT_ID=$KEYCLOAK_CLIENT_ID
+      - PROVIDERS_OIDC_CLIENT_SECRET=$KEYCLOAK_CLIENT_SEC
+      - PROVIDERS_OIDC_ISSUER_URL=https://kc.$DOMAINNAME/auth/realms/$KEYCLOAK_REALM
+      - SECRET=$KEYCLOAK_COOKIE_SEC
+      - AUTH_HOST=auth.$DOMAINNAME
+      - COOKIE_DOMAIN=$DOMAINNAME
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.auth.entrypoints=https
+      - traefik.http.routers.auth.rule=Host(`auth.$DOMAINNAME`)
+      - traefik.http.services.auth.loadbalancer.server.port=4181
+      - traefik.http.routers.auth.tls=true
+      - traefik.http.routers.auth.middlewares=chain-all-auth
+
+  organizr:
+    container_name: organizr
+    image: organizrtools/organizr-v2
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - jellyfin
+      - qbittorent
+      - jackett
+      - nzbhydra2
+      - sonarr
+      - radarr
+      - bazarr
+      - ombi
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    ports:
+    - 8085:8085
+    volumes:
+      - $CONFIG_PATH/organizr/config:/config
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.organizr.entrypoints=https
+      - traefik.http.routers.organizr.rule=Host(`$DOMAINNAME`,`www.$DOMAINNAME`)
+      - traefik.http.routers.organizr.tls=true
+      - traefik.http.routers.organizr.middlewares=chain-all-auth
+
+  jellyfin:
+    container_name: jellyfin
+    image: jellyfin/jellyfin
+    restart: unless-stopped
+    depends_on:
+      - traefik
+    networks:
+      - internal
+      - proxy
+    ports:
+      - 8096:8096
+    environment:
+      - TZ=$TZ
+    volumes:
+      - $CONFIG_PATH/jellyfin/config:/config
+      - $CONFIG_PATH/jellyfin/cache:/cache
+      - $STORAGE/media:/media
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.jellyfin.entrypoints=https
+      - traefik.http.routers.jellyfin.rule=Host(`jf.$DOMAINNAME`)
+      - traefik.http.routers.jellyfin.tls=true
+      - traefik.http.services.jellyfin.loadbalancer.server.port=8096
+      - traefik.http.routers.jellyfin.middlewares=chain-all-no-auth
+
+  qbittorent:
+    container_name: qbittorrent
+    image: linuxserver/qbittorrent
+    restart: unless-stopped
+    depends_on:
+      - traefik
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    volumes:
+      - $CONFIG_PATH/qbittorrent/config:/config
+      - $STORAGE/downloads:/downloads
+    ports:
+      - 6881:6881
+      - 6881:6881/udp
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.torrent.entrypoints=https
+      - traefik.http.routers.torrent.rule=Host(`qb.$DOMAINNAME`)
+      - traefik.http.routers.torrent.tls=true
+      - traefik.http.services.torrent.loadbalancer.server.port=8080
+      - traefik.http.routers.torrent.middlewares=chain-all-auth
+
+  jackett:
+    container_name: jackett
+    image: linuxserver/jackett
+    restart: unless-stopped
+    depends_on:
+      - traefik
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    volumes:
+      - $CONFIG_PATH/jackett/config:/config
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.jackett.entrypoints=https
+      - traefik.http.routers.jackett.rule=Host(`jk.$DOMAINNAME`)
+      - traefik.http.routers.jackett.tls=true
+      - traefik.http.routers.jackett.middlewares=chain-all-auth
+
+  nzbhydra2:
+    container_name: nzbhydra2
+    image: linuxserver/nzbhydra2
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - jackett
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    volumes:
+    - $CONFIG_PATH/nzbhydra2/config:/config
+    - $STORAGE/downloads:/downloads
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.nzbhydra2.entrypoints=https
+      - traefik.http.routers.nzbhydra2.rule=Host(`nh.$DOMAINNAME`)
+      - traefik.http.routers.nzbhydra2.tls=true
+      - traefik.http.routers.nzbhydra2.middlewares=chain-all-auth
+
+  sonarr:
+    container_name: sonarr
+    image: linuxserver/sonarr:preview
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - nzbhydra2
+      - qbittorent
+      - jellyfin
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    volumes:
+      - $CONFIG_PATH/sonarr/config:/config
+      - $STORAGE:/mnt/media
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.sonarr.entrypoints=https
+      - traefik.http.routers.sonarr.rule=Host(`sn.$DOMAINNAME`)
+      - traefik.http.routers.sonarr.tls=true
+      - traefik.http.routers.sonarr.middlewares=chain-all-auth
+
+  radarr:
+    container_name: radarr
+    image: linuxserver/radarr:preview
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - nzbhydra2
+      - qbittorent
+      - jellyfin
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    volumes:
+      - $CONFIG_PATH/radarr/config:/config
+      - $STORAGE:/mnt/media
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.radarr.entrypoints=https
+      - traefik.http.routers.radarr.rule=Host(`rd.$DOMAINNAME`)
+      - traefik.http.routers.radarr.tls=true
+      - traefik.http.routers.radarr.middlewares=chain-all-auth
+
+  bazarr:
+    container_name: bazarr
+#    image: linuxserver/bazarr
+    build: ./bazarr
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - radarr
+      - sonarr
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    volumes:
+      - $CONFIG_PATH/bazarr/config:/config
+      - $STORAGE/media:/mnt/media
+      - ./bazarr/subscleaner:/usr/bin/subscleaner
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.bazarr.entrypoints=https
+      - traefik.http.routers.bazarr.rule=Host(`bz.$DOMAINNAME`)
+      - traefik.http.routers.bazarr.tls=true
+      - traefik.http.routers.bazarr.middlewares=chain-all-auth
+
+  ombi:
+    container_name: ombi
+    image: linuxserver/ombi
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - jellyfin
+      - radarr
+      - sonarr
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    volumes:
+      - $CONFIG_PATH/ombi/config:/config
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ombi.entrypoints=https
+      - traefik.http.routers.ombi.rule=Host(`om.$DOMAINNAME`)
+      - traefik.http.routers.ombi.tls=true
+      - traefik.http.routers.ombi.middlewares=chain-all-auth
