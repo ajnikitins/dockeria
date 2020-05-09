@@ -221,19 +221,21 @@ services:
     networks:
       - internal
       - proxy
+    ports:
+      - 8096:8096
     environment:
       - TZ=$TZ
     volumes:
       - $CONFIG_PATH/jellyfin/config:/config
       - $CONFIG_PATH/jellyfin/cache:/cache
-      - $MEDIA:/media
+      - $STORAGE/media:/media
     labels:
       - traefik.enable=true
       - traefik.http.routers.jellyfin.entrypoints=https
       - traefik.http.routers.jellyfin.rule=Host(`jf.$DOMAINNAME`)
       - traefik.http.routers.jellyfin.tls=true
       - traefik.http.services.jellyfin.loadbalancer.server.port=8096
-      - traefik.http.routers.jellyfin.middlewares=chain-all-auth
+      - traefik.http.routers.jellyfin.middlewares=chain-all-no-auth
 
   qbittorent:
     container_name: qbittorrent
@@ -248,7 +250,7 @@ services:
       - TZ=$TZ
     volumes:
       - $CONFIG_PATH/qbittorrent/config:/config
-      - $DOWNLOADS:/downloads
+      - $STORAGE/downloads:/downloads
     ports:
       - 6881:6881
       - 6881:6881/udp
@@ -294,7 +296,7 @@ services:
       - TZ=$TZ
     volumes:
     - $CONFIG_PATH/nzbhydra2/config:/config
-    - $DOWNLOADS:/downloads
+    - $STORAGE/downloads:/downloads
     labels:
       - traefik.enable=true
       - traefik.http.routers.nzbhydra2.entrypoints=https
@@ -318,8 +320,7 @@ services:
       - TZ=$TZ
     volumes:
       - $CONFIG_PATH/sonarr/config:/config
-      - $MEDIA/tv:/tv
-      - $DOWNLOADS:/downloads
+      - $STORAGE:/mnt/media
     labels:
       - traefik.enable=true
       - traefik.http.routers.sonarr.entrypoints=https
@@ -343,8 +344,7 @@ services:
       - TZ=$TZ
     volumes:
       - $CONFIG_PATH/radarr/config:/config
-      - $MEDIA/movies:/movies
-      - $DOWNLOADS:/downloads
+      - $STORAGE:/mnt/media
     labels:
       - traefik.enable=true
       - traefik.http.routers.radarr.entrypoints=https
