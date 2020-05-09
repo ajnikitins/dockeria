@@ -279,3 +279,25 @@ services:
       - traefik.http.routers.jackett.rule=Host(`jk.$DOMAINNAME`)
       - traefik.http.routers.jackett.tls=true
       - traefik.http.routers.jackett.middlewares=chain-all-auth
+
+  nzbhydra2:
+    container_name: nzbhydra2
+    image: linuxserver/nzbhydra2
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - jackett
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    volumes:
+    - $CONFIG_PATH/nzbhydra2/config:/config
+    - $DOWNLOADS:/downloads
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.nzbhydra2.entrypoints=https
+      - traefik.http.routers.nzbhydra2.rule=Host(`nh.$DOMAINNAME`)
+      - traefik.http.routers.nzbhydra2.tls=true
+      - traefik.http.routers.nzbhydra2.middlewares=chain-all-auth
