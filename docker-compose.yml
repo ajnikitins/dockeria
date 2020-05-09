@@ -301,3 +301,26 @@ services:
       - traefik.http.routers.nzbhydra2.rule=Host(`nh.$DOMAINNAME`)
       - traefik.http.routers.nzbhydra2.tls=true
       - traefik.http.routers.nzbhydra2.middlewares=chain-all-auth
+
+  sonarr:
+    container_name: sonarr
+    image: linuxserver/sonarr
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - nzbhydra2
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    volumes:
+      - $CONFIG_PATH/sonarr/config:/config
+      - $MEDIA/tv:/tv
+      - $DOWNLOADS:/downloads
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.sonarr.entrypoints=https
+      - traefik.http.routers.sonarr.rule=Host(`sr.$DOMAINNAME`)
+      - traefik.http.routers.sonarr.tls=true
+      - traefik.http.routers.sonarr.middlewares=chain-all-auth
