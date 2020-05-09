@@ -196,6 +196,11 @@ services:
       - jellyfin
       - qbittorent
       - jackett
+      - nzbhydra2
+      - sonarr
+      - radarr
+      - bazarr
+      - ombi
     networks:
       - internal
       - proxy
