@@ -325,3 +325,27 @@ services:
       - traefik.http.routers.sonarr.rule=Host(`sn.$DOMAINNAME`)
       - traefik.http.routers.sonarr.tls=true
       - traefik.http.routers.sonarr.middlewares=chain-all-auth
+
+  radarr:
+    container_name: radarr
+    image: linuxserver/radarr
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - nzbhydra2
+      - qbittorent
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    volumes:
+      - $CONFIG_PATH/radarr/config:/config
+      - $MEDIA/movies:/movies
+      - $DOWNLOADS:/downloads
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.radarr.entrypoints=https
+      - traefik.http.routers.radarr.rule=Host(`rd.$DOMAINNAME`)
+      - traefik.http.routers.radarr.tls=true
+      - traefik.http.routers.radarr.middlewares=chain-all-auth
