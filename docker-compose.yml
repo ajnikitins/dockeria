@@ -352,6 +352,31 @@ services:
       - traefik.http.routers.radarr.tls=true
       - traefik.http.routers.radarr.middlewares=chain-all-auth
 
+  bazarr:
+    container_name: bazarr
+#    image: linuxserver/bazarr
+    build: ./bazarr
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - radarr
+      - sonarr
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    volumes:
+      - $CONFIG_PATH/bazarr/config:/config
+      - $STORAGE/media:/mnt/media
+      - ./bazarr/subscleaner:/usr/bin/subscleaner
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.bazarr.entrypoints=https
+      - traefik.http.routers.bazarr.rule=Host(`bz.$DOMAINNAME`)
+      - traefik.http.routers.bazarr.tls=true
+      - traefik.http.routers.bazarr.middlewares=chain-all-auth
+
   ombi:
     container_name: ombi
     image: linuxserver/ombi
