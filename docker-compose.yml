@@ -304,7 +304,7 @@ services:
 
   sonarr:
     container_name: sonarr
-    image: linuxserver/sonarr
+    image: linuxserver/sonarr:preview
     restart: unless-stopped
     depends_on:
       - traefik
@@ -329,7 +329,7 @@ services:
 
   radarr:
     container_name: radarr
-    image: linuxserver/radarr
+    image: linuxserver/radarr:preview
     restart: unless-stopped
     depends_on:
       - traefik
@@ -351,3 +351,26 @@ services:
       - traefik.http.routers.radarr.rule=Host(`rd.$DOMAINNAME`)
       - traefik.http.routers.radarr.tls=true
       - traefik.http.routers.radarr.middlewares=chain-all-auth
+
+  ombi:
+    container_name: ombi
+    image: linuxserver/ombi
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - jellyfin
+      - radarr
+      - sonarr
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    volumes:
+      - $CONFIG_PATH/ombi/config:/config
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ombi.entrypoints=https
+      - traefik.http.routers.ombi.rule=Host(`om.$DOMAINNAME`)
+      - traefik.http.routers.ombi.tls=true
+      - traefik.http.routers.ombi.middlewares=chain-all-auth
