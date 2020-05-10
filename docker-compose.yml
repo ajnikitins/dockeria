@@ -404,3 +404,24 @@ services:
       - traefik.http.routers.ombi.rule=Host(`om.$DOMAINNAME`)
       - traefik.http.routers.ombi.tls=true
       - traefik.http.routers.ombi.middlewares=chain-all-auth
+
+  portainer:
+    container_name: portainer
+    image: portainer/portainer
+    restart: unless-stopped
+    depends_on:
+      - traefik
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - $CONFIG_PATH/portainer/data:/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.portainer.entrypoints=https
+      - traefik.http.routers.portainer.rule=Host(`pt.$DOMAINNAME`)
+      - traefik.http.routers.portainer.tls=true
+      - traefik.http.routers.portainer.middlewares=chain-all-auth
