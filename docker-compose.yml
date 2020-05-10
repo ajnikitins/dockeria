@@ -108,12 +108,13 @@ services:
       - PHPLDAPADMIN_HTTPS=false
       - PHPLDAPADMIN_TRUST_PROXY_SSL=true
       - PHPLDAPADMIN_LDAP_CLIENT_TLS=false
+    volumes:
+      - $CONFIG_PATH/phpldapadmin/data:/var/www/phpldapadmin
     labels:
       - traefik.enable=true
       - traefik.http.routers.ldapadmin.entrypoints=https
       - traefik.http.routers.ldapadmin.rule=Host(`pl.$DOMAINNAME`)
       - traefik.http.routers.ldapadmin.tls=true
-#      - traefik.http.services.ldapadmin.loadbalancer.server.port=8080
       - traefik.http.routers.ldapadmin.middlewares=chain-all-auth
 
   keycloak:
