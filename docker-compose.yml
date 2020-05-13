@@ -108,12 +108,13 @@ services:
       - PHPLDAPADMIN_HTTPS=false
       - PHPLDAPADMIN_TRUST_PROXY_SSL=true
       - PHPLDAPADMIN_LDAP_CLIENT_TLS=false
+    volumes:
+      - $CONFIG_PATH/phpldapadmin/data:/var/www/phpldapadmin
     labels:
       - traefik.enable=true
       - traefik.http.routers.ldapadmin.entrypoints=https
       - traefik.http.routers.ldapadmin.rule=Host(`pl.$DOMAINNAME`)
       - traefik.http.routers.ldapadmin.tls=true
-#      - traefik.http.services.ldapadmin.loadbalancer.server.port=8080
       - traefik.http.routers.ldapadmin.middlewares=chain-all-auth
 
   keycloak:
@@ -129,7 +130,7 @@ services:
       - proxy
     environment:
       - TZ=$TZ
-      - DB_VENDOR=mysql
+      - DB_VENDOR=postgres
       - DB_DATABASE=keycloak
       - DB_ADDR=keycloak-db
       - DB_USER=keycloak
@@ -146,19 +147,16 @@ services:
 
   keycloak-db:
     container_name: keycloak-db
-    image: mysql
+    image: postgres
     restart: unless-stopped
-    command: --default-time-zone=Europe/Riga
     networks:
       - internal
     environment:
       - TZ=$TZ
-      - MYSQL_ROOT_PASSWORD=$KEYCLOAK_PWD_DB_ROOT
-      - MYSQL_DATABASE=keycloak
-      - MYSQL_USER=keycloak
-      - MYSQL_PASSWORD=$KEYCLOAK_PWD_DB
+      - POSTGRES_USER=keycloak
+      - POSTGRES_PASSWORD=$KEYCLOAK_PWD_DB
     volumes:
-      - $CONFIG_PATH/keycloak/database:/var/lib/mysql
+      - $CONFIG_PATH/keycloak/database:/var/lib/postgresql/data
 
   auth:
     container_name: auth
@@ -194,7 +192,7 @@ services:
     depends_on:
       - traefik
       - jellyfin
-      - qbittorent
+      - deluge
       - jackett
       - nzbhydra2
       - sonarr
@@ -242,9 +240,9 @@ services:
       - traefik.http.services.jellyfin.loadbalancer.server.port=8096
       - traefik.http.routers.jellyfin.middlewares=chain-all-no-auth
 
-  qbittorent:
-    container_name: qbittorrent
-    image: linuxserver/qbittorrent
+  deluge:
+    container_name: deluge
+    image: linuxserver/deluge
     restart: unless-stopped
     depends_on:
       - traefik
@@ -253,8 +251,10 @@ services:
       - proxy
     environment:
       - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
     volumes:
-      - $CONFIG_PATH/qbittorrent/config:/config
+      - $CONFIG_PATH/deluge/config:/config
       - $STORAGE/downloads:/downloads
     ports:
       - 6881:6881
@@ -262,10 +262,33 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.torrent.entrypoints=https
-      - traefik.http.routers.torrent.rule=Host(`qb.$DOMAINNAME`)
+      - traefik.http.routers.torrent.rule=Host(`dl.$DOMAINNAME`)
       - traefik.http.routers.torrent.tls=true
-      - traefik.http.services.torrent.loadbalancer.server.port=8080
+      - traefik.http.services.torrent.loadbalancer.server.port=8112
       - traefik.http.routers.torrent.middlewares=chain-all-auth
+
+  tdarr:
+    container_name: tdarr
+    image: haveagitgat/tdarr_aio
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - deluge
+    networks:
+      - internal
+      - proxy
+    volumes:
+      - $CONFIG_PATH/tdarr/config:/home/Tdarr/Documents/Tdarr
+      - $CONFIG_PATH/tdarr/database:/var/lib/mongodb
+      - $STORAGE/media:/home/Tdarr/Media
+      - /etc/localtime:/etc/localtime:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.tdarr.entrypoints=https
+      - traefik.http.routers.tdarr.rule=Host(`td.$DOMAINNAME`)
+      - traefik.http.routers.tdarr.tls=true
+      - traefik.http.services.tdarr.loadbalancer.server.port=8265
+      - traefik.http.routers.tdarr.middlewares=chain-all-auth
 
   jackett:
     container_name: jackett
@@ -278,6 +301,8 @@ services:
       - proxy
     environment:
       - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
     volumes:
       - $CONFIG_PATH/jackett/config:/config
     labels:
@@ -299,6 +324,8 @@ services:
       - proxy
     environment:
       - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
     volumes:
     - $CONFIG_PATH/nzbhydra2/config:/config
     - $STORAGE/downloads:/downloads
@@ -316,13 +343,15 @@ services:
     depends_on:
       - traefik
       - nzbhydra2
-      - qbittorent
+      - deluge
       - jellyfin
     networks:
       - internal
       - proxy
     environment:
       - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
     volumes:
       - $CONFIG_PATH/sonarr/config:/config
       - $STORAGE:/mnt/media
@@ -340,13 +369,15 @@ services:
     depends_on:
       - traefik
       - nzbhydra2
-      - qbittorent
+      - deluge
       - jellyfin
     networks:
       - internal
       - proxy
     environment:
       - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
     volumes:
       - $CONFIG_PATH/radarr/config:/config
       - $STORAGE:/mnt/media
@@ -371,6 +402,8 @@ services:
       - proxy
     environment:
       - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
     volumes:
       - $CONFIG_PATH/bazarr/config:/config
       - $STORAGE/media:/mnt/media
@@ -396,6 +429,8 @@ services:
       - proxy
     environment:
       - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
     volumes:
       - $CONFIG_PATH/ombi/config:/config
     labels:
@@ -404,3 +439,24 @@ services:
       - traefik.http.routers.ombi.rule=Host(`om.$DOMAINNAME`)
       - traefik.http.routers.ombi.tls=true
       - traefik.http.routers.ombi.middlewares=chain-all-auth
+
+  portainer:
+    container_name: portainer
+    image: portainer/portainer
+    restart: unless-stopped
+    depends_on:
+      - traefik
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - $CONFIG_PATH/portainer/data:/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.portainer.entrypoints=https
+      - traefik.http.routers.portainer.rule=Host(`pt.$DOMAINNAME`)
+      - traefik.http.routers.portainer.tls=true
+      - traefik.http.routers.portainer.middlewares=chain-all-auth
