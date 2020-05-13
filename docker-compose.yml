@@ -267,9 +267,9 @@ services:
       - traefik.http.services.torrent.loadbalancer.server.port=8112
       - traefik.http.routers.torrent.middlewares=chain-all-auth
 
-  handbrake:
-    container_name: handbrake
-    image: jlesage/handbrake
+  tdarr:
+    container_name: tdarr
+    image: haveagitgat/tdarr_aio
     restart: unless-stopped
     depends_on:
       - traefik
@@ -277,22 +277,18 @@ services:
     networks:
       - internal
       - proxy
-    environment:
-      - AUTOMATED_CONVERSION_PRESET=myh265
-      - AUTOMATED_CONVERSION_FORMAT=mkv
-      - AUTOMATED_CONVERSION_KEEP_SOURCE=0
-      - AUTOMATED_CONVERSION_OUTPUT_SUBDIR=SAME_AS_SRC
     volumes:
-      - $CONFIG_PATH/handbrake/config:/config
-      - $STORAGE/downloads/copied:/watch
-      - $STORAGE/downloads/processed:/output
+      - $CONFIG_PATH/tdarr/config:/home/Tdarr/Documents/Tdarr
+      - $CONFIG_PATH/tdarr/database:/var/lib/mongodb
+      - $STORAGE/media:/home/Tdarr/Media
+      - /etc/localtime:/etc/localtime:ro
     labels:
       - traefik.enable=true
-      - traefik.http.routers.handbrake.entrypoints=https
-      - traefik.http.routers.handbrake.rule=Host(`hb.$DOMAINNAME`)
-      - traefik.http.routers.handbrake.tls=true
-      - traefik.http.services.handbrake.loadbalancer.server.port=5800
-      - traefik.http.routers.handbrake.middlewares=chain-all-auth
+      - traefik.http.routers.tdarr.entrypoints=https
+      - traefik.http.routers.tdarr.rule=Host(`td.$DOMAINNAME`)
+      - traefik.http.routers.tdarr.tls=true
+      - traefik.http.services.tdarr.loadbalancer.server.port=8265
+      - traefik.http.routers.tdarr.middlewares=chain-all-auth
 
   jackett:
     container_name: jackett
