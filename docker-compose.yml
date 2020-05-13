@@ -130,7 +130,7 @@ services:
       - proxy
     environment:
       - TZ=$TZ
-      - DB_VENDOR=mysql
+      - DB_VENDOR=postgres
       - DB_DATABASE=keycloak
       - DB_ADDR=keycloak-db
       - DB_USER=keycloak
@@ -147,19 +147,16 @@ services:
 
   keycloak-db:
     container_name: keycloak-db
-    image: mysql
+    image: postgres
     restart: unless-stopped
-    command: --default-time-zone=Europe/Riga
     networks:
       - internal
     environment:
       - TZ=$TZ
-      - MYSQL_ROOT_PASSWORD=$KEYCLOAK_PWD_DB_ROOT
-      - MYSQL_DATABASE=keycloak
-      - MYSQL_USER=keycloak
-      - MYSQL_PASSWORD=$KEYCLOAK_PWD_DB
+      - POSTGRES_USER=keycloak
+      - POSTGRES_PASSWORD=$KEYCLOAK_PWD_DB
     volumes:
-      - $CONFIG_PATH/keycloak/database:/var/lib/mysql
+      - $CONFIG_PATH/keycloak/database:/var/lib/postgresql/data
 
   auth:
     container_name: auth
@@ -254,6 +251,8 @@ services:
       - proxy
     environment:
       - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
     volumes:
       - $CONFIG_PATH/qbittorrent/config:/config
       - $STORAGE/downloads:/downloads
@@ -279,6 +278,8 @@ services:
       - proxy
     environment:
       - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
     volumes:
       - $CONFIG_PATH/jackett/config:/config
     labels:
@@ -300,6 +301,8 @@ services:
       - proxy
     environment:
       - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
     volumes:
     - $CONFIG_PATH/nzbhydra2/config:/config
     - $STORAGE/downloads:/downloads
@@ -324,6 +327,8 @@ services:
       - proxy
     environment:
       - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
     volumes:
       - $CONFIG_PATH/sonarr/config:/config
       - $STORAGE:/mnt/media
@@ -348,6 +353,8 @@ services:
       - proxy
     environment:
       - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
     volumes:
       - $CONFIG_PATH/radarr/config:/config
       - $STORAGE:/mnt/media
@@ -372,6 +379,8 @@ services:
       - proxy
     environment:
       - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
     volumes:
       - $CONFIG_PATH/bazarr/config:/config
       - $STORAGE/media:/mnt/media
@@ -397,6 +406,8 @@ services:
       - proxy
     environment:
       - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
     volumes:
       - $CONFIG_PATH/ombi/config:/config
     labels:
