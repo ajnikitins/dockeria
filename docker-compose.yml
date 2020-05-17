@@ -460,3 +460,52 @@ services:
       - traefik.http.routers.portainer.rule=Host(`pt.$DOMAINNAME`)
       - traefik.http.routers.portainer.tls=true
       - traefik.http.routers.portainer.middlewares=chain-all-auth
+
+  lazylibrarian:
+    container_name: lazylibrarian
+    image: thraxis/lazylibrarian-calibre
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - calibre-server
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - $CONFIG_PATH/lazylibrarian/config:/config
+      - $STORAGE:/mnt/media
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.lazylibrarian.entrypoints=https
+      - traefik.http.routers.lazylibrarian.rule=Host(`ll.$DOMAINNAME`)
+      - traefik.http.routers.lazylibrarian.tls=true
+      - traefik.http.routers.lazylibrarian.middlewares=chain-all-auth
+
+  calibre-web:
+    container_name: calibre-web
+    image: linuxserver/calibre-web
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - lazylibrarian
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
+      - DOCKER_MODS=linuxserver/calibre-web:calibre
+    volumes:
+      - $CONFIG_PATH/calibre-web/config:/config
+      - $STORAGE/media/books/calibre:/books
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.calibre-web.entrypoints=https
+      - traefik.http.routers.calibre-web.rule=Host(`cw.$DOMAINNAME`)
+      - traefik.http.routers.calibre-web.tls=true
+      - traefik.http.routers.calibre-web.middlewares=chain-all-auth
