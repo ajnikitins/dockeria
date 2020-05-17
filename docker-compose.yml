@@ -463,11 +463,10 @@ services:
 
   lazylibrarian:
     container_name: lazylibrarian
-    image: thraxis/lazylibrarian-calibre
+    image: linuxserver/lazylibrarian
     restart: unless-stopped
     depends_on:
       - traefik
-      - calibre-server
     networks:
       - internal
       - proxy
@@ -475,6 +474,7 @@ services:
       - TZ=$TZ
       - PUID=1000
       - PGID=1000
+      - DOCKER_MODS=linuxserver/mods:lazylibrarian-ffmpeg|linuxserver/calibre-web:calibre
     volumes:
       - $CONFIG_PATH/lazylibrarian/config:/config
       - $STORAGE:/mnt/media
