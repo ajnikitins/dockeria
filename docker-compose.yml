@@ -192,7 +192,7 @@ services:
     depends_on:
       - traefik
       - jellyfin
-      - qbittorent
+      - qbittorrent
       - jackett
       - nzbhydra2
       - sonarr
@@ -240,7 +240,7 @@ services:
       - traefik.http.services.jellyfin.loadbalancer.server.port=8096
       - traefik.http.routers.jellyfin.middlewares=chain-all-no-auth
 
-  qbittorent:
+  qbittorrent:
     container_name: qbittorrent
     image: linuxserver/qbittorrent
     restart: unless-stopped
@@ -273,7 +273,7 @@ services:
     restart: unless-stopped
     depends_on:
       - traefik
-      - deluge
+      - qbittorrent
     networks:
       - internal
       - proxy
@@ -343,7 +343,7 @@ services:
     depends_on:
       - traefik
       - nzbhydra2
-      - qbittorent
+      - qbittorrent
       - jellyfin
     networks:
       - internal
@@ -369,7 +369,7 @@ services:
     depends_on:
       - traefik
       - nzbhydra2
-      - qbittorent
+      - qbittorrent
       - jellyfin
     networks:
       - internal
