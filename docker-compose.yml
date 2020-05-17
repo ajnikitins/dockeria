@@ -501,6 +501,7 @@ services:
       - PGID=1000
       - DOCKER_MODS=linuxserver/calibre-web:calibre
     volumes:
+      - ./calibre-web/imagemagick/policy.xml:/etc/Imagemagick-6/policy.xml
       - $CONFIG_PATH/calibre-web/config:/config
       - $STORAGE/media/books/calibre:/books
     labels:
