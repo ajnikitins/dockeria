@@ -192,7 +192,7 @@ services:
     depends_on:
       - traefik
       - jellyfin
-      - deluge
+      - qbittorent
       - jackett
       - nzbhydra2
       - sonarr
@@ -240,9 +240,9 @@ services:
       - traefik.http.services.jellyfin.loadbalancer.server.port=8096
       - traefik.http.routers.jellyfin.middlewares=chain-all-no-auth
 
-  deluge:
-    container_name: deluge
-    image: linuxserver/deluge
+  qbittorent:
+    container_name: qbittorrent
+    image: linuxserver/qbittorrent
     restart: unless-stopped
     depends_on:
       - traefik
@@ -254,7 +254,7 @@ services:
       - PUID=1000
       - PGID=1000
     volumes:
-      - $CONFIG_PATH/deluge/config:/config
+      - $CONFIG_PATH/qbittorrent/config:/config
       - $STORAGE/downloads:/downloads
     ports:
       - 6881:6881
@@ -262,9 +262,9 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.torrent.entrypoints=https
-      - traefik.http.routers.torrent.rule=Host(`dl.$DOMAINNAME`)
+      - traefik.http.routers.torrent.rule=Host(`qb.$DOMAINNAME`)
       - traefik.http.routers.torrent.tls=true
-      - traefik.http.services.torrent.loadbalancer.server.port=8112
+      - traefik.http.services.torrent.loadbalancer.server.port=8080
       - traefik.http.routers.torrent.middlewares=chain-all-auth
 
   tdarr:
@@ -343,7 +343,7 @@ services:
     depends_on:
       - traefik
       - nzbhydra2
-      - deluge
+      - qbittorent
       - jellyfin
     networks:
       - internal
@@ -369,7 +369,7 @@ services:
     depends_on:
       - traefik
       - nzbhydra2
-      - deluge
+      - qbittorent
       - jellyfin
     networks:
       - internal
