@@ -8,30 +8,30 @@ networks:
 
 services:
 
-  whoami:
-    container_name: whoami
-    image: containous/whoami
-    restart: unless-stopped
-    networks:
-      - internal
-      - proxy
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.whoami.entrypoints=https
-      - traefik.http.routers.whoami.rule=Host(`whoami.$DOMAINNAME`)
-      - traefik.http.routers.whoami.tls=true
-      - traefik.http.routers.whoami.middlewares=chain-all-auth
+#  whoami:
+#    container_name: whoami
+#    image: containous/whoami
+#    restart: unless-stopped
+#    networks:
+#      - internal
+#      - proxy
+#    labels:
+#      - traefik.enable=true
+#      - traefik.http.routers.whoami.entrypoints=https
+#      - traefik.http.routers.whoami.rule=Host(`whoami.$DOMAINNAME`)
+#      - traefik.http.routers.whoami.tls=true
+#      - traefik.http.routers.whoami.middlewares=chain-all-auth
 
-  watchtower:
-    container_name: watchtower
-    image: containrrr/watchtower
-    restart: unless-stopped
-    networks:
-      - internal
-    environment:
-      - TZ=$TZ
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+#  watchtower:
+#    container_name: watchtower
+#    image: containrrr/watchtower
+#    restart: unless-stopped
+#    networks:
+#      - internal
+#    environment:
+#      - TZ=$TZ
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
 
   traefik:
     container_name: traefik
@@ -192,7 +192,7 @@ services:
     depends_on:
       - traefik
       - jellyfin
-      - deluge
+      - qbittorrent
       - jackett
       - nzbhydra2
       - sonarr
@@ -240,9 +240,9 @@ services:
       - traefik.http.services.jellyfin.loadbalancer.server.port=8096
       - traefik.http.routers.jellyfin.middlewares=chain-all-no-auth
 
-  deluge:
-    container_name: deluge
-    image: linuxserver/deluge
+  qbittorrent:
+    container_name: qbittorrent
+    image: linuxserver/qbittorrent
     restart: unless-stopped
     depends_on:
       - traefik
@@ -254,7 +254,7 @@ services:
       - PUID=1000
       - PGID=1000
     volumes:
-      - $CONFIG_PATH/deluge/config:/config
+      - $CONFIG_PATH/qbittorrent/config:/config
       - $STORAGE/downloads:/downloads
     ports:
       - 6881:6881
@@ -262,9 +262,9 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.torrent.entrypoints=https
-      - traefik.http.routers.torrent.rule=Host(`dl.$DOMAINNAME`)
+      - traefik.http.routers.torrent.rule=Host(`qb.$DOMAINNAME`)
       - traefik.http.routers.torrent.tls=true
-      - traefik.http.services.torrent.loadbalancer.server.port=8112
+      - traefik.http.services.torrent.loadbalancer.server.port=8080
       - traefik.http.routers.torrent.middlewares=chain-all-auth
 
   tdarr:
@@ -273,7 +273,7 @@ services:
     restart: unless-stopped
     depends_on:
       - traefik
-      - deluge
+      - qbittorrent
     networks:
       - internal
       - proxy
@@ -343,7 +343,7 @@ services:
     depends_on:
       - traefik
       - nzbhydra2
-      - deluge
+      - qbittorrent
       - jellyfin
     networks:
       - internal
@@ -369,7 +369,7 @@ services:
     depends_on:
       - traefik
       - nzbhydra2
-      - deluge
+      - qbittorrent
       - jellyfin
     networks:
       - internal
@@ -460,3 +460,53 @@ services:
       - traefik.http.routers.portainer.rule=Host(`pt.$DOMAINNAME`)
       - traefik.http.routers.portainer.tls=true
       - traefik.http.routers.portainer.middlewares=chain-all-auth
+
+  lazylibrarian:
+    container_name: lazylibrarian
+    image: linuxserver/lazylibrarian
+    restart: unless-stopped
+    depends_on:
+      - traefik
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
+      - DOCKER_MODS=linuxserver/mods:lazylibrarian-ffmpeg|linuxserver/calibre-web:calibre
+    volumes:
+      - $CONFIG_PATH/lazylibrarian/config:/config
+      - $STORAGE:/mnt/media
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.lazylibrarian.entrypoints=https
+      - traefik.http.routers.lazylibrarian.rule=Host(`ll.$DOMAINNAME`)
+      - traefik.http.routers.lazylibrarian.tls=true
+      - traefik.http.routers.lazylibrarian.middlewares=chain-all-auth
+
+  calibre-web:
+    container_name: calibre-web
+    image: linuxserver/calibre-web
+    restart: unless-stopped
+    depends_on:
+      - traefik
+      - lazylibrarian
+    networks:
+      - internal
+      - proxy
+    environment:
+      - TZ=$TZ
+      - PUID=1000
+      - PGID=1000
+      - DOCKER_MODS=linuxserver/calibre-web:calibre
+    volumes:
+      - ./calibre-web/imagemagick/policy.xml:/etc/Imagemagick-6/policy.xml
+      - $CONFIG_PATH/calibre-web/config:/config
+      - $STORAGE/media/books/calibre:/books
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.calibre-web.entrypoints=https
+      - traefik.http.routers.calibre-web.rule=Host(`cw.$DOMAINNAME`)
+      - traefik.http.routers.calibre-web.tls=true
+      - traefik.http.routers.calibre-web.middlewares=chain-all-auth
