@@ -8,30 +8,30 @@ networks:
 
 services:
 
-  whoami:
-    container_name: whoami
-    image: containous/whoami
-    restart: unless-stopped
-    networks:
-      - internal
-      - proxy
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.whoami.entrypoints=https
-      - traefik.http.routers.whoami.rule=Host(`whoami.$DOMAINNAME`)
-      - traefik.http.routers.whoami.tls=true
-      - traefik.http.routers.whoami.middlewares=chain-all-auth
+#  whoami:
+#    container_name: whoami
+#    image: containous/whoami
+#    restart: unless-stopped
+#    networks:
+#      - internal
+#      - proxy
+#    labels:
+#      - traefik.enable=true
+#      - traefik.http.routers.whoami.entrypoints=https
+#      - traefik.http.routers.whoami.rule=Host(`whoami.$DOMAINNAME`)
+#      - traefik.http.routers.whoami.tls=true
+#      - traefik.http.routers.whoami.middlewares=chain-all-auth
 
-  watchtower:
-    container_name: watchtower
-    image: containrrr/watchtower
-    restart: unless-stopped
-    networks:
-      - internal
-    environment:
-      - TZ=$TZ
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+#  watchtower:
+#    container_name: watchtower
+#    image: containrrr/watchtower
+#    restart: unless-stopped
+#    networks:
+#      - internal
+#    environment:
+#      - TZ=$TZ
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
 
   traefik:
     container_name: traefik
