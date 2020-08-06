@@ -8,19 +8,19 @@ networks:
 
 services:
 
-#  whoami:
-#    container_name: whoami
-#    image: containous/whoami
-#    restart: unless-stopped
-#    networks:
-#      - internal
-#      - proxy
-#    labels:
-#      - traefik.enable=true
-#      - traefik.http.routers.whoami.entrypoints=https
-#      - traefik.http.routers.whoami.rule=Host(`whoami.$DOMAINNAME`)
-#      - traefik.http.routers.whoami.tls=true
-#      - traefik.http.routers.whoami.middlewares=chain-all-auth
+  whoami:
+    container_name: whoami
+    image: containous/whoami
+    restart: unless-stopped
+    networks:
+      - internal
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.whoami.entrypoints=https
+      - traefik.http.routers.whoami.rule=Host(`whoami.$DOMAINNAME`)
+      - traefik.http.routers.whoami.tls=true
+      - traefik.http.routers.whoami.middlewares=chain-all-auth
 
 #  watchtower:
 #    container_name: watchtower
@@ -70,6 +70,7 @@ services:
       ## Services - API
       - traefik.http.routers.traefik.service=api@internal
       ## Middlewares
+      - traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto = https
       - traefik.http.middlewares.secure-headers-frame-options.headers.customFrameOptionsValue="allow-from https:$DOMAINNAME"
       - traefik.http.middlewares.chain-all-auth.chain.middlewares=chain-auth@file,secure-headers-frame-options
       - traefik.http.middlewares.chain-all-no-auth.chain.middlewares=chain-no-auth@file,secure-headers-frame-options
@@ -187,7 +188,7 @@ services:
 
   organizr:
     container_name: organizr
-    image: organizrtools/organizr-v2
+    image: organizr/organizr
     restart: unless-stopped
     depends_on:
       - traefik
