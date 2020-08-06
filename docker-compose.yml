@@ -511,3 +511,46 @@ services:
       - traefik.http.routers.calibre-web.rule=Host(`cw.$DOMAINNAME`)
       - traefik.http.routers.calibre-web.tls=true
       - traefik.http.routers.calibre-web.middlewares=chain-all-auth
+
+#  bitwarden:
+#    container_name: bitwarden
+#    image: bitwardenrs/server
+#    restart: unless-stopped
+#    depends_on:
+#      - traefik
+#    networks:
+#      - internal
+#      - proxy
+#    environment:
+#      - TZ=$TZ
+#      - DOMAIN=https://bw.$DOMAINNAME
+#      - WEBSOCKET_ENABLED=true
+#      - ADMIN_TOKEN=$BITWARDEN_ADMIN_TOK
+#      - SIGNUPS_ALLOWED=false
+#   volumes:
+#     - $CONFIG_PATH/bitwarden:/data
+#   labels:
+#     - traefik.enable=true
+#     - traefik.http.routers.bitwarden.rule=Host(`bw.$DOMAINNAME`)
+#     - traefik.http.routers.bitwarden.tls=true
+#     - traefik.http.routers.bitwarden.service=bitwarden
+#     - traefik.http.services.bitwarden.loadbalancer.server.port=80
+#      - traefik.http.routers.bitwarden.middlewares=chain-all-auth
+#     - traefik.http.routers.bitwarden-ws.rule=(Host(`bw.$DOMAINNAME`) && Path(`/notifications/hub`))
+#     - traefik.http.routers.bitwarden-ws.tls=true
+#     - traefik.http.routers.bitwarden-ws.service=bitwarden-ws
+#     - traefik.http.services.bitwarden-ws.loadbalancer.server.port=3012
+
+#  bitwarden-ldap:
+#    container_name: bitwarden-ldap
+#    image: vividboarder/bitwarden_rs_ldap
+#    restart: unless-stopped
+#    depends_on:
+#      - openldap
+#      - bitwarden
+#    networks:
+#      - internal
+#    environment:
+#      - RUST_BACKTRACE=1
+#    volumes:
+#      - $CONFIG_PATH/bitwarden-ldap/config.toml:/usr/src/bitwarden_rs_ldap/config.toml
