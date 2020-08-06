@@ -1,0 +1,10 @@
+# rename this to config.toml, place in $CONFIG_PATH/bitwarden-ldap and replace placeholders
+
+bitwarden_url = "http://bw.$DOMAINNAME"
+bitwarden_admin_token = "$BITWARDEN_ADMIN_TOK"
+ldap_host = "openldap"
+ldap_bind_dn = "cn=admin,$LDAP_BASE_DN"
+ldap_bind_password = "$LDAP_ADMIN_PWD"
+ldap_search_base_dn = "$LDAP_BASE_DN"
+ldap_search_filter = "(&(objectClass=*)(uid=*))"
+ldap_sync_interval_seconds = 10

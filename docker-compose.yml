@@ -8,19 +8,19 @@ networks:
 
 services:
 
-#  whoami:
-#    container_name: whoami
-#    image: containous/whoami
-#    restart: unless-stopped
-#    networks:
-#      - internal
-#      - proxy
-#    labels:
-#      - traefik.enable=true
-#      - traefik.http.routers.whoami.entrypoints=https
-#      - traefik.http.routers.whoami.rule=Host(`whoami.$DOMAINNAME`)
-#      - traefik.http.routers.whoami.tls=true
-#      - traefik.http.routers.whoami.middlewares=chain-all-auth
+  whoami:
+    container_name: whoami
+    image: containous/whoami
+    restart: unless-stopped
+    networks:
+      - internal
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.whoami.entrypoints=https
+      - traefik.http.routers.whoami.rule=Host(`whoami.$DOMAINNAME`)
+      - traefik.http.routers.whoami.tls=true
+      - traefik.http.routers.whoami.middlewares=chain-all-auth
 
 #  watchtower:
 #    container_name: watchtower
@@ -70,6 +70,7 @@ services:
       ## Services - API
       - traefik.http.routers.traefik.service=api@internal
       ## Middlewares
+      - traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto = https
       - traefik.http.middlewares.secure-headers-frame-options.headers.customFrameOptionsValue="allow-from https:$DOMAINNAME"
       - traefik.http.middlewares.chain-all-auth.chain.middlewares=chain-auth@file,secure-headers-frame-options
       - traefik.http.middlewares.chain-all-no-auth.chain.middlewares=chain-no-auth@file,secure-headers-frame-options
@@ -187,7 +188,7 @@ services:
 
   organizr:
     container_name: organizr
-    image: organizrtools/organizr-v2
+    image: organizr/organizr
     restart: unless-stopped
     depends_on:
       - traefik
@@ -510,3 +511,46 @@ services:
       - traefik.http.routers.calibre-web.rule=Host(`cw.$DOMAINNAME`)
       - traefik.http.routers.calibre-web.tls=true
       - traefik.http.routers.calibre-web.middlewares=chain-all-auth
+
+#  bitwarden:
+#    container_name: bitwarden
+#    image: bitwardenrs/server
+#    restart: unless-stopped
+#    depends_on:
+#      - traefik
+#    networks:
+#      - internal
+#      - proxy
+#    environment:
+#      - TZ=$TZ
+#      - DOMAIN=https://bw.$DOMAINNAME
+#      - WEBSOCKET_ENABLED=true
+#      - ADMIN_TOKEN=$BITWARDEN_ADMIN_TOK
+#      - SIGNUPS_ALLOWED=false
+#   volumes:
+#     - $CONFIG_PATH/bitwarden:/data
+#   labels:
+#     - traefik.enable=true
+#     - traefik.http.routers.bitwarden.rule=Host(`bw.$DOMAINNAME`)
+#     - traefik.http.routers.bitwarden.tls=true
+#     - traefik.http.routers.bitwarden.service=bitwarden
+#     - traefik.http.services.bitwarden.loadbalancer.server.port=80
+#      - traefik.http.routers.bitwarden.middlewares=chain-all-auth
+#     - traefik.http.routers.bitwarden-ws.rule=(Host(`bw.$DOMAINNAME`) && Path(`/notifications/hub`))
+#     - traefik.http.routers.bitwarden-ws.tls=true
+#     - traefik.http.routers.bitwarden-ws.service=bitwarden-ws
+#     - traefik.http.services.bitwarden-ws.loadbalancer.server.port=3012
+
+#  bitwarden-ldap:
+#    container_name: bitwarden-ldap
+#    image: vividboarder/bitwarden_rs_ldap
+#    restart: unless-stopped
+#    depends_on:
+#      - openldap
+#      - bitwarden
+#    networks:
+#      - internal
+#    environment:
+#      - RUST_BACKTRACE=1
+#    volumes:
+#      - $CONFIG_PATH/bitwarden-ldap/config.toml:/usr/src/bitwarden_rs_ldap/config.toml
