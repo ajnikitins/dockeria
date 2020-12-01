@@ -148,7 +148,7 @@ services:
 
   keycloak-db:
     container_name: keycloak-db
-    image: postgres
+    image: library/postgres:12.4
     restart: unless-stopped
     networks:
       - internal
