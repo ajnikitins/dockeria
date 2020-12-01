@@ -218,7 +218,7 @@ services:
 
   jellyfin:
     container_name: jellyfin
-    image: jellyfin/jellyfin
+    image: jellyfin/jellyfin:unstable
     restart: unless-stopped
     depends_on:
       - traefik
