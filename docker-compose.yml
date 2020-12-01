@@ -365,7 +365,7 @@ services:
 
   radarr:
     container_name: radarr
-    image: linuxserver/radarr:preview
+    image: linuxserver/radarr:nightly
     restart: unless-stopped
     depends_on:
       - traefik
