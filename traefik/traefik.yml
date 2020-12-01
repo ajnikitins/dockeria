@@ -19,6 +19,7 @@ accessLog:
 providers:
   docker:
     exposedByDefault: false
+    endpoint: "unix:///var/run/docker.sock"
   file:
     directory: "/rules"
     watch: true
