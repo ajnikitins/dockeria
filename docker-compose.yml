@@ -268,28 +268,28 @@ services:
       - traefik.http.services.torrent.loadbalancer.server.port=8080
       - traefik.http.routers.torrent.middlewares=chain-all-auth
 
-  tdarr:
-    container_name: tdarr
-    image: haveagitgat/tdarr_aio
-    restart: unless-stopped
-    depends_on:
-      - traefik
-      - qbittorrent
-    networks:
-      - internal
-      - proxy
-    volumes:
-      - $CONFIG_PATH/tdarr/config:/home/Tdarr/Documents/Tdarr
-      - $CONFIG_PATH/tdarr/database:/var/lib/mongodb
-      - $STORAGE/media:/home/Tdarr/Media
-      - /etc/localtime:/etc/localtime:ro
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.tdarr.entrypoints=https
-      - traefik.http.routers.tdarr.rule=Host(`td.$DOMAINNAME`)
-      - traefik.http.routers.tdarr.tls=true
-      - traefik.http.services.tdarr.loadbalancer.server.port=8265
-      - traefik.http.routers.tdarr.middlewares=chain-all-auth
+#  tdarr:
+#    container_name: tdarr
+#    image: haveagitgat/tdarr_aio
+#    restart: unless-stopped
+#    depends_on:
+#      - traefik
+#      - qbittorrent
+#    networks:
+#      - internal
+#      - proxy
+#    volumes:
+#      - $CONFIG_PATH/tdarr/config:/home/Tdarr/Documents/Tdarr
+#      - $CONFIG_PATH/tdarr/database:/var/lib/mongodb
+#      - $STORAGE/media:/home/Tdarr/Media
+#      - /etc/localtime:/etc/localtime:ro
+#    labels:
+#      - traefik.enable=true
+#      - traefik.http.routers.tdarr.entrypoints=https
+#      - traefik.http.routers.tdarr.rule=Host(`td.$DOMAINNAME`)
+#      - traefik.http.routers.tdarr.tls=true
+#      - traefik.http.services.tdarr.loadbalancer.server.port=8265
+#      - traefik.http.routers.tdarr.middlewares=chain-all-auth
 
   jackett:
     container_name: jackett
