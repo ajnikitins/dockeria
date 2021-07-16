@@ -5,6 +5,12 @@ entryPoints:
     address: ":443"
   traefik:
     address: ":8080"
+  dnsovertls:
+    address: ":853"
+  dns:
+    address: ":53"
+  udpdns:
+    address: ":53/udp"
 
 api:
   dashboard: true

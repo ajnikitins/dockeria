@@ -45,6 +45,9 @@ services:
     ports:
       - 80:80
       - 443:443
+      - 853:853
+      - 53:53
+      - 53:53/udp
     environment:
       - TZ=$TZ
     volumes:
@@ -161,7 +164,7 @@ services:
 
   auth:
     container_name: auth
-    image: thomseddon/traefik-forward-auth
+    image: thomseddon/traefik-forward-auth:2
     restart: unless-stopped
     depends_on:
       - traefik
@@ -339,7 +342,7 @@ services:
 
   sonarr:
     container_name: sonarr
-    image: linuxserver/sonarr:preview
+    image: linuxserver/sonarr
     restart: unless-stopped
     depends_on:
       - traefik
@@ -447,7 +450,7 @@ services:
 
   portainer:
     container_name: portainer
-    image: portainer/portainer
+    image: portainer/portainer-ce
     restart: unless-stopped
     depends_on:
       - traefik
@@ -516,6 +519,50 @@ services:
       - traefik.http.routers.calibre-web.tls=true
       - traefik.http.routers.calibre-web.middlewares=chain-all-auth
 
+  pihole:
+    container_name: pihole
+    image: jacklul/pihole:latest
+    restart: unless-stopped
+    depends_on: 
+      - traefik
+    networks:
+      - internal
+    environment: 
+      PUID: '1000'
+      PGID: '1000'
+      TZ: $TZ
+      WEBPASSWORD: $PIHOLE_PWD
+      VIRTUAL_HOST: pi.$DOMAINNAME
+    volumes:
+      - $CONFIG_PATH/pihole:/etc/pihole
+      - $CONFIG_PATH/dnsmasq.d:/etc/dnsmasq.d
+      - $CONFIG_PATH/pihole-updatelists:/etc/pihole-updatelists
+    dns:
+      - 127.0.0.1
+      - 8.8.8.8
+    labels: 
+      - traefik.enable=true
+      - traefik.http.routers.pihole.entrypoints=https
+      - traefik.http.routers.pihole.rule=Host(`pi.$DOMAINNAME`)
+      - traefik.http.routers.pihole.tls=true
+      # - traefik.http.routers.pihole.middlewares=chain-all-auth
+      - traefik.http.services.pihole.loadbalancer.server.port=80
+
+      - traefik.tcp.routers.dnsovertls.rule=HostSNI(`pi.$DOMAINNAME`)
+      - traefik.tcp.routers.dnsovertls.entrypoints=dnsovertls
+      - traefik.tcp.routers.dnsovertls.tls=true
+      - traefik.tcp.routers.dnsovertls.service=pihole
+
+      - traefik.tcp.routers.dns.rule=HostSNI(`pi.$DOMAINNAME)
+      - traefik.tcp.routers.dns.entrypoints=dns
+      - traefik.tcp.routers.dns.service=pihole
+
+      - traefik.tcp.services.pihole.loadbalancer.server.port=53
+
+      - traefik.udp.routers.udpdns.entrypoints=udpdns
+      - traefik.udp.routers.udpdns.service=pihole
+      - traefik.udp.services.pihole.loadbalancer.server.port=53
+
 #  bitwarden:
 #    container_name: bitwarden
 #    image: bitwardenrs/server
@@ -558,3 +605,34 @@ services:
 #      - RUST_BACKTRACE=1
 #    volumes:
 #      - $CONFIG_PATH/bitwarden-ldap/config.toml:/usr/src/bitwarden_rs_ldap/config.toml
+
+#   kanboard:
+#     container_name: kanboard
+#     image: kanboard/kanboard
+#     restart: unless-stopped
+#     depends_on:
+#       - traefik
+#     networks:
+#       - internal
+#       - proxy
+#     environment:
+#       - LDAP_AUTH=true
+#       - LDAP_BIND_TYPE=proxy
+#       - LDAP_USERNAME=cn=admin,$LDAP_BASE_DN
+#       - LDAP_PASSWORD=$LDAP_ADMIN_PWD
+#       - LDAP_SERVER=openldap
+#       - LDAP_USER_BASE_DN=ou=People,$LDAP_BASE_DN
+#       - LDAP_USER_FILTER=uid=%s
+# #      - REVERSE_PROXY_AUTH=true
+# #      - REVERSE_PROXY_EMAIL_HEADER=HTTP_X-Forwarded-User
+# #      - REVERSE_PROXY_DEFAULT_ADMIN=ajnikitins
+#       - PLUGIN_INSTALLER=true
+#     volumes:
+#       - $CONFIG_PATH/kanboard/:/var/www/app/data
+#       - $CONFIG_PATH/kanboard/plugins:/var/www/app/plugins
+#     labels:
+#       - traefik.enable=true
+#       - traefik.http.routers.kanboard.entrypoints=https
+#       - traefik.http.routers.kanboard.rule=Host(`kb.$DOMAINNAME`)
+#       - traefik.http.routers.kanboard.tls=true
+#       - traefik.http.routers.kanboard.middlewares=chain-all-auth
