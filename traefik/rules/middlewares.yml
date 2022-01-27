@@ -19,7 +19,6 @@ http:
         stsIncludeSubdomains: true
         stsPreload: true
         forceSTSHeader: true
-#        customFrameOptionsValue: "allow-from https:viens.ml"
         contentTypeNosniff: true
         browserXssFilter: true
         referrerPolicy: "same-origin"
